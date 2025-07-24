@@ -96,16 +96,17 @@ func NewSummarizer(basePath string) *Summarizer {
 // SummarizeFile analyzes a file and returns its summary
 func (s *Summarizer) SummarizeFile(filePath string) FileSummary {
 	summary := FileSummary{
-		Path:       filePath,
-		Language:   getLanguage(filePath),
-		Functions:  make([]string, 0),
-		Imports:    make([]string, 0),
-		Types:      make([]string, 0),
-		Structs:    make([]string, 0),
-		Headers:    make([]string, 0),
-		Links:      make([]string, 0),
-		ConfigKeys: make([]string, 0),
-		Content:    make([]string, 0),
+		Path:          filePath,
+		Language:      getLanguage(filePath),
+		Functions:     make([]string, 0),
+		Imports:       make([]string, 0),
+		Types:         make([]string, 0),
+		Structs:       make([]string, 0),
+		Headers:       make([]string, 0),
+		Links:         make([]string, 0),
+		ConfigKeys:    make([]string, 0),
+		Content:       make([]string, 0),
+		FunctionCount: 0, // Initialize function count
 	}
 
 	// Construct full path
@@ -167,6 +168,7 @@ func (s *Summarizer) parseSourceCode(fullPath string, summary FileSummary, confi
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
 	inMultiLineComment := false
+	summary.FunctionCount = 0 // Initialize function count
 
 	for scanner.Scan() {
 		lineCount++
@@ -193,7 +195,7 @@ func (s *Summarizer) parseSourceCode(fullPath string, summary FileSummary, confi
 			for _, match := range matches[1:] {
 				if match != "" {
 					summary.Functions = append(summary.Functions, match)
-					summary.FunctionCount++
+					summary.FunctionCount++ // Increment function count when a function is found
 					break
 				}
 			}

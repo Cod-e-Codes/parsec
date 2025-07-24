@@ -85,17 +85,19 @@ func (m *SummaryModel) SetDimensions(width, height int) {
 func (m *SummaryModel) Scroll(delta int) {
 	lines := strings.Split(m.content, "\n")
 
-	// Use same height calculation as View method
-	availableHeight := m.height - 4 // Account for padding only
+	// Calculate available height and max scroll position
+	availableHeight := m.height - 4 // Account for padding
 	if availableHeight < 1 {
 		availableHeight = 1
 	}
 
-	maxScroll := 0
-	if len(lines) > availableHeight {
-		maxScroll = len(lines) - availableHeight
+	// Calculate max scroll position
+	maxScroll := len(lines) - availableHeight
+	if maxScroll < 0 {
+		maxScroll = 0
 	}
 
+	// Calculate new scroll position
 	newPos := m.scrollPos + delta
 	if newPos < 0 {
 		newPos = 0
@@ -103,6 +105,7 @@ func (m *SummaryModel) Scroll(delta int) {
 	if newPos > maxScroll {
 		newPos = maxScroll
 	}
+
 	m.scrollPos = newPos
 }
 
@@ -187,17 +190,7 @@ func (m SummaryModel) formatSummaryForDisplay(summary core.FileSummary) string {
 		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Bold(true).Render("📝 Rendered Content:"))
 		result.WriteString("\n\n")
 		result.WriteString(summary.RenderedContent)
-		return result.String()
-	}
-
-	// For text files with content preview
-	if len(summary.Content) > 0 {
-		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Bold(true).Render("📖 Content Preview:"))
 		result.WriteString("\n\n")
-		for _, line := range summary.Content {
-			result.WriteString(line + "\n")
-		}
-		result.WriteString("\n")
 	}
 
 	// Headers for markdown files
@@ -211,6 +204,31 @@ func (m SummaryModel) formatSummaryForDisplay(summary core.FileSummary) string {
 		}
 		if len(summary.Headers) > 10 {
 			result.WriteString(fmt.Sprintf("  ... and %d more\n", len(summary.Headers)-10))
+		}
+		result.WriteString("\n")
+	}
+
+	// Links for markdown files
+	if len(summary.Links) > 0 {
+		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true).Render("🔗 Links:"))
+		result.WriteString("\n")
+		for i, link := range summary.Links {
+			if i < 8 { // Show max 8 links
+				result.WriteString(fmt.Sprintf("  %s\n", link))
+			}
+		}
+		if len(summary.Links) > 8 {
+			result.WriteString(fmt.Sprintf("  ... and %d more\n", len(summary.Links)-8))
+		}
+		result.WriteString("\n")
+	}
+
+	// For text files with content preview
+	if len(summary.Content) > 0 {
+		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Bold(true).Render("📖 Content Preview:"))
+		result.WriteString("\n\n")
+		for _, line := range summary.Content {
+			result.WriteString(line + "\n")
 		}
 		result.WriteString("\n")
 	}
@@ -290,20 +308,6 @@ func (m SummaryModel) formatSummaryForDisplay(summary core.FileSummary) string {
 		}
 		if len(summary.Structs) > 10 {
 			result.WriteString(fmt.Sprintf("  ... and %d more\n", len(summary.Structs)-10))
-		}
-	}
-
-	// Links for markdown files
-	if len(summary.Links) > 0 {
-		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true).Render("🔗 Links:"))
-		result.WriteString("\n")
-		for i, link := range summary.Links {
-			if i < 8 { // Show max 8 links
-				result.WriteString(fmt.Sprintf("  %s\n", link))
-			}
-		}
-		if len(summary.Links) > 8 {
-			result.WriteString(fmt.Sprintf("  ... and %d more\n", len(summary.Links)-8))
 		}
 	}
 
