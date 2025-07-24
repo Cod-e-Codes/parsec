@@ -1,0 +1,52 @@
+# .github/dependabot.yml
+version: 2
+updates:
+  # Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Target dependencies that need updates
+    allow:
+      # Core dependencies
+      - dependency-name: "github.com/charmbracelet/bubbletea"
+      - dependency-name: "github.com/charmbracelet/glamour"
+      - dependency-name: "github.com/charmbracelet/lipgloss"
+      - dependency-name: "github.com/sahilm/fuzzy"
+    # Group updates together to reduce PR noise
+    groups:
+      charmbracelet:
+        patterns:
+          - "github.com/charmbracelet/*"
+    # Security updates should be handled quickly
+    security-updates-only: false
+    # Ignore certain dependency updates
+    ignore:
+      # Example: Lock a dependency to a specific major version if needed
+      # - dependency-name: "some-dependency"
+      #   versions: ["2.x"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
