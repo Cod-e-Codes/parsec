@@ -29,3 +29,6 @@ parsec
 parsec.exe
 parseccopy.exe
 parsec copy.exe 
+
+# Release binaries
+releases/
