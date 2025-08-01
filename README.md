@@ -2,11 +2,11 @@
 
 Parsec is a fast, terminal-based file inspector that provides immediate summaries of source code files. Built for developers who need rapid context-aware code browsing.
 
-## Screenshot
+## Demo
 
-<img src="screenshot_01.png" alt="Parsec TUI Interface" width="800">
+![Demo](demo.gif)
 
-*Parsec's split-screen interface showing file navigation and executable help display*
+*Parsec's split-screen interface showing file summaries and executable help display*
 
 ## Features
 
