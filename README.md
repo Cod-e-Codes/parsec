@@ -8,6 +8,13 @@ Parsec is a fast, terminal-based file inspector that provides immediate summarie
 
 *Parsec's split-screen interface showing file summaries and executable help display*
 
+## Recent Improvements
+
+- **Enhanced C++ Support**: Added `.cc` file extension recognition with full parsing capabilities
+- **Code Refactoring**: Refactored monolithic parsing logic into language-specific functions for better maintainability
+- **Improved Control Flow**: Replaced boolean flags with cleaner goto statements for directory skipping logic
+- **Better Modularity**: Language-specific parsers for Go, Python, JavaScript/TypeScript, Rust, and C++
+
 ## Features
 
 - Split-screen interface with file tree and detailed summary view
@@ -68,7 +75,7 @@ go build .
 
 | Category | Extensions | Features |
 |----------|------------|-----------|
-| Programming | `.go` `.py` `.js` `.ts` `.rs` `.java` `.c` `.cpp` | Functions, types, imports |
+| Programming | `.go` `.py` `.js` `.ts` `.rs` `.java` `.c` `.cpp` `.cc` | Functions, types, imports |
 | Documentation | `.md` `.markdown` `.rst` | Headers, links, rendered content |
 | Configuration | `.json` `.yaml` `.ini` `.env` | Keys, structure |
 | Data | `.xml` `.csv` `.log` | Content preview |

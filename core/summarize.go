@@ -81,6 +81,18 @@ var languageConfigs = map[string]LanguageConfig{
 		TypePattern:     regexp.MustCompile(`^(?:pub\s+)?(?:struct\s+(\w+)|enum\s+(\w+)|type\s+(\w+))`),
 		StructPattern:   regexp.MustCompile(`^(?:pub\s+)?struct\s+(\w+)`),
 	},
+	".cpp": {
+		FunctionPattern: regexp.MustCompile(`^(?:[a-zA-Z_][a-zA-Z0-9_]*\s+)?(?:[a-zA-Z_][a-zA-Z0-9_]*::)?\w+\s+(\w+)\s*\(`),
+		ImportPattern:   regexp.MustCompile(`^#include\s+[<"]([^>"]+)[>"]`),
+		TypePattern:     regexp.MustCompile(`^(?:class|struct|enum|union)\s+(\w+)`),
+		StructPattern:   regexp.MustCompile(`^(?:class|struct)\s+(\w+)`),
+	},
+	".cc": {
+		FunctionPattern: regexp.MustCompile(`^(?:[a-zA-Z_][a-zA-Z0-9_]*\s+)?(?:[a-zA-Z_][a-zA-Z0-9_]*::)?\w+\s+(\w+)\s*\(`),
+		ImportPattern:   regexp.MustCompile(`^#include\s+[<"]([^>"]+)[>"]`),
+		TypePattern:     regexp.MustCompile(`^(?:class|struct|enum|union)\s+(\w+)`),
+		StructPattern:   regexp.MustCompile(`^(?:class|struct)\s+(\w+)`),
+	},
 }
 
 // Summarizer handles file analysis and summary generation
@@ -144,18 +156,36 @@ func (s *Summarizer) SummarizeFile(filePath string) FileSummary {
 	case ".txt", ".log", ".rst", ".xml", ".csv":
 		return s.parseTextFile(fullPath, summary)
 	default:
-		// Try to parse as source code
-		config, exists := languageConfigs[ext]
-		if !exists {
-			// If not a known source file, treat as text
-			return s.parseTextFile(fullPath, summary)
+		// Try to parse as source code using language-specific parsers
+		switch ext {
+		case ".go":
+			return s.parseGoFile(fullPath, summary)
+		case ".py":
+			return s.parsePythonFile(fullPath, summary)
+		case ".js", ".jsx", ".ts", ".tsx":
+			return s.parseJavaScriptFile(fullPath, summary)
+		case ".rs":
+			return s.parseRustFile(fullPath, summary)
+		case ".cpp", ".cc":
+			return s.parseCppFile(fullPath, summary)
+		default:
+			// Try to parse as source code using generic parser
+			config, exists := languageConfigs[ext]
+			if !exists {
+				// If not a known source file, treat as text
+				return s.parseTextFile(fullPath, summary)
+			}
+			return s.parseSourceCode(fullPath, summary, config)
 		}
-		return s.parseSourceCode(fullPath, summary, config)
 	}
 }
 
 // parseSourceCode handles traditional programming language files
 func (s *Summarizer) parseSourceCode(fullPath string, summary FileSummary, config LanguageConfig) FileSummary {
+	// TODO: Refactor into language-specific parsing functions
+	// This is a temporary placeholder while we implement the refactoring
+	// The current implementation will be replaced with language-specific parsers
+
 	file, err := os.Open(fullPath)
 	if err != nil {
 		summary.Error = fmt.Sprintf("Error opening file: %v", err)
@@ -546,6 +576,329 @@ func extractJSONKeys(data interface{}, prefix string) []string {
 	return keys
 }
 
+// parseGoFile handles Go-specific parsing with proper comment handling
+func (s *Summarizer) parseGoFile(fullPath string, summary FileSummary) FileSummary {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		summary.Error = fmt.Sprintf("Error opening file: %v", err)
+		return summary
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inMultiLineComment := false
+
+	for scanner.Scan() {
+		lineCount++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and single-line comments
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+
+		// Handle multi-line comments
+		if strings.Contains(line, "/*") {
+			inMultiLineComment = true
+		}
+		if inMultiLineComment {
+			if strings.Contains(line, "*/") {
+				inMultiLineComment = false
+			}
+			continue
+		}
+
+		// Extract Go-specific patterns
+		if matches := regexp.MustCompile(`^func\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Functions = append(summary.Functions, matches[1])
+			summary.FunctionCount++
+		}
+
+		if matches := regexp.MustCompile(`^import\s+["']([^"']+)["']|^\s+["']([^"']+)["']`).FindStringSubmatch(line); matches != nil {
+			for _, match := range matches[1:] {
+				if match != "" {
+					summary.Imports = append(summary.Imports, match)
+					break
+				}
+			}
+		}
+
+		if matches := regexp.MustCompile(`^type\s+(\w+)\s+`).FindStringSubmatch(line); matches != nil {
+			summary.Types = append(summary.Types, matches[1])
+		}
+
+		if matches := regexp.MustCompile(`^type\s+(\w+)\s+struct`).FindStringSubmatch(line); matches != nil {
+			summary.Structs = append(summary.Structs, matches[1])
+		}
+	}
+
+	summary.LineCount = lineCount
+	if err := scanner.Err(); err != nil {
+		summary.Error = fmt.Sprintf("Error reading file: %v", err)
+	}
+
+	return summary
+}
+
+// parsePythonFile handles Python-specific parsing
+func (s *Summarizer) parsePythonFile(fullPath string, summary FileSummary) FileSummary {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		summary.Error = fmt.Sprintf("Error opening file: %v", err)
+		return summary
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inMultiLineString := false
+
+	for scanner.Scan() {
+		lineCount++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Handle multi-line strings (docstrings)
+		if strings.Contains(line, `"""`) || strings.Contains(line, `'''`) {
+			inMultiLineString = !inMultiLineString
+			continue
+		}
+		if inMultiLineString {
+			continue
+		}
+
+		// Extract Python-specific patterns
+		if matches := regexp.MustCompile(`^def\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Functions = append(summary.Functions, matches[1])
+			summary.FunctionCount++
+		}
+
+		if matches := regexp.MustCompile(`^(?:from\s+(\S+)\s+)?import\s+(.+)`).FindStringSubmatch(line); matches != nil {
+			importStr := ""
+			if matches[1] != "" {
+				importStr = matches[1] + "." + matches[2]
+			} else {
+				importStr = matches[2]
+			}
+			summary.Imports = append(summary.Imports, importStr)
+		}
+
+		if matches := regexp.MustCompile(`^class\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Types = append(summary.Types, matches[1])
+			summary.Structs = append(summary.Structs, matches[1])
+		}
+	}
+
+	summary.LineCount = lineCount
+	if err := scanner.Err(); err != nil {
+		summary.Error = fmt.Sprintf("Error reading file: %v", err)
+	}
+
+	return summary
+}
+
+// parseJavaScriptFile handles JavaScript/TypeScript-specific parsing
+func (s *Summarizer) parseJavaScriptFile(fullPath string, summary FileSummary) FileSummary {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		summary.Error = fmt.Sprintf("Error opening file: %v", err)
+		return summary
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inMultiLineComment := false
+
+	for scanner.Scan() {
+		lineCount++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and single-line comments
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+
+		// Handle multi-line comments
+		if strings.Contains(line, "/*") {
+			inMultiLineComment = true
+		}
+		if inMultiLineComment {
+			if strings.Contains(line, "*/") {
+				inMultiLineComment = false
+			}
+			continue
+		}
+
+		// Extract JavaScript/TypeScript patterns
+		if matches := regexp.MustCompile(`^(?:function\s+(\w+)|const\s+(\w+)\s*=.*=>|(\w+)\s*:\s*function)`).FindStringSubmatch(line); matches != nil {
+			for _, match := range matches[1:] {
+				if match != "" {
+					summary.Functions = append(summary.Functions, match)
+					summary.FunctionCount++
+					break
+				}
+			}
+		}
+
+		if matches := regexp.MustCompile(`^import.*from\s+['"]([^'"]+)['"]|^const\s+.*=\s+require\(['"]([^'"]+)['"]\)`).FindStringSubmatch(line); matches != nil {
+			for _, match := range matches[1:] {
+				if match != "" {
+					summary.Imports = append(summary.Imports, match)
+					break
+				}
+			}
+		}
+
+		if matches := regexp.MustCompile(`^(?:class\s+(\w+)|interface\s+(\w+))`).FindStringSubmatch(line); matches != nil {
+			for _, match := range matches[1:] {
+				if match != "" {
+					summary.Types = append(summary.Types, match)
+					summary.Structs = append(summary.Structs, match)
+					break
+				}
+			}
+		}
+	}
+
+	summary.LineCount = lineCount
+	if err := scanner.Err(); err != nil {
+		summary.Error = fmt.Sprintf("Error reading file: %v", err)
+	}
+
+	return summary
+}
+
+// parseRustFile handles Rust-specific parsing
+func (s *Summarizer) parseRustFile(fullPath string, summary FileSummary) FileSummary {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		summary.Error = fmt.Sprintf("Error opening file: %v", err)
+		return summary
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inMultiLineComment := false
+
+	for scanner.Scan() {
+		lineCount++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and single-line comments
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+
+		// Handle multi-line comments
+		if strings.Contains(line, "/*") {
+			inMultiLineComment = true
+		}
+		if inMultiLineComment {
+			if strings.Contains(line, "*/") {
+				inMultiLineComment = false
+			}
+			continue
+		}
+
+		// Extract Rust-specific patterns
+		if matches := regexp.MustCompile(`^(?:pub\s+)?fn\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Functions = append(summary.Functions, matches[1])
+			summary.FunctionCount++
+		}
+
+		if matches := regexp.MustCompile(`^use\s+([^;]+);`).FindStringSubmatch(line); matches != nil {
+			summary.Imports = append(summary.Imports, matches[1])
+		}
+
+		if matches := regexp.MustCompile(`^(?:pub\s+)?(?:struct\s+(\w+)|enum\s+(\w+)|type\s+(\w+))`).FindStringSubmatch(line); matches != nil {
+			for _, match := range matches[1:] {
+				if match != "" {
+					summary.Types = append(summary.Types, match)
+					break
+				}
+			}
+		}
+
+		if matches := regexp.MustCompile(`^(?:pub\s+)?struct\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Structs = append(summary.Structs, matches[1])
+		}
+	}
+
+	summary.LineCount = lineCount
+	if err := scanner.Err(); err != nil {
+		summary.Error = fmt.Sprintf("Error reading file: %v", err)
+	}
+
+	return summary
+}
+
+// parseCppFile handles C++-specific parsing
+func (s *Summarizer) parseCppFile(fullPath string, summary FileSummary) FileSummary {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		summary.Error = fmt.Sprintf("Error opening file: %v", err)
+		return summary
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inMultiLineComment := false
+
+	for scanner.Scan() {
+		lineCount++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and single-line comments
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+
+		// Handle multi-line comments
+		if strings.Contains(line, "/*") {
+			inMultiLineComment = true
+		}
+		if inMultiLineComment {
+			if strings.Contains(line, "*/") {
+				inMultiLineComment = false
+			}
+			continue
+		}
+
+		// Extract C++-specific patterns
+		if matches := regexp.MustCompile(`^(?:[a-zA-Z_][a-zA-Z0-9_]*\s+)?(?:[a-zA-Z_][a-zA-Z0-9_]*::)?\w+\s+(\w+)\s*\(`).FindStringSubmatch(line); matches != nil {
+			summary.Functions = append(summary.Functions, matches[1])
+			summary.FunctionCount++
+		}
+
+		if matches := regexp.MustCompile(`^#include\s+[<"]([^>"]+)[>"]`).FindStringSubmatch(line); matches != nil {
+			summary.Imports = append(summary.Imports, matches[1])
+		}
+
+		if matches := regexp.MustCompile(`^(?:class|struct|enum|union)\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Types = append(summary.Types, matches[1])
+		}
+
+		if matches := regexp.MustCompile(`^(?:class|struct)\s+(\w+)`).FindStringSubmatch(line); matches != nil {
+			summary.Structs = append(summary.Structs, matches[1])
+		}
+	}
+
+	summary.LineCount = lineCount
+	if err := scanner.Err(); err != nil {
+		summary.Error = fmt.Sprintf("Error reading file: %v", err)
+	}
+
+	return summary
+}
+
 // formatBytes formats file size in human-readable format
 func formatBytes(size int64) string {
 	const (
@@ -580,6 +933,7 @@ func getLanguage(filePath string) string {
 		".java":  "Java",
 		".c":     "C",
 		".cpp":   "C++",
+		".cc":    "C++",
 		".h":     "C Header",
 		".hpp":   "C++ Header",
 		".cs":    "C#",

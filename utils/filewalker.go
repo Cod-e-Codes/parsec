@@ -20,6 +20,7 @@ var SupportedExtensions = map[string]bool{
 	".java":  true,
 	".c":     true,
 	".cpp":   true,
+	".cc":    true,
 	".h":     true,
 	".hpp":   true,
 	".cs":    true,
@@ -122,18 +123,15 @@ func (w *Walker) ListDirectory(dirPath string) ([]FileInfo, error) {
 		// Skip common non-source directories
 		if entry.IsDir() {
 			skipDirs := []string{"node_modules", "vendor", "target", "build", "dist", ".git"}
-			shouldSkip := false
 			for _, skipDir := range skipDirs {
 				if entry.Name() == skipDir {
-					shouldSkip = true
-					break
+					goto skipToNextEntry
 				}
 			}
-			if shouldSkip {
-				continue
-			}
+			// If we reach here, the directory is not in skipDirs, so continue processing
 		}
 
+	skipToNextEntry:
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		// Show all files and directories (not just supported extensions)
 		fileInfo := FileInfo{

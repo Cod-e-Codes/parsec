@@ -239,6 +239,7 @@ func getFileIcon(ext string) string {
 		".java":  "☕",
 		".c":     "📄",
 		".cpp":   "📄",
+		".cc":    "📄",
 		".h":     "📄",
 		".hpp":   "📄",
 		".cs":    "🔷",
