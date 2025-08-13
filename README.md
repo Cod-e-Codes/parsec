@@ -8,13 +8,6 @@ Parsec is a fast, terminal-based file inspector that provides immediate summarie
 
 *Parsec's split-screen interface showing file summaries and executable help display*
 
-## Recent Improvements
-
-- **Enhanced C++ Support**: Added `.cc` file extension recognition with full parsing capabilities
-- **Code Refactoring**: Refactored monolithic parsing logic into language-specific functions for better maintainability
-- **Improved Control Flow**: Replaced boolean flags with cleaner goto statements for directory skipping logic
-- **Better Modularity**: Language-specific parsers for Go, Python, JavaScript/TypeScript, Rust, and C++
-
 ## Features
 
 - Split-screen interface with file tree and detailed summary view
@@ -32,6 +25,21 @@ Parsec is a fast, terminal-based file inspector that provides immediate summarie
 - Asynchronous operations for smooth performance
 
 ## Installation
+
+### From Binary Release (Recommended)
+
+1. Download the appropriate zip file for your platform from the [Releases](#releases) section
+2. Extract the executable from the zip file
+3. Make it executable (Linux/macOS only):
+   ```bash
+   chmod +x parsec
+   ```
+4. Run the application:
+   ```bash
+   ./parsec [directory]
+   ```
+
+### From Source
 
 ```bash
 git clone https://github.com/Cod-e-Codes/parsec.git
@@ -127,6 +135,24 @@ Dependencies are managed through Go modules and automatically updated via Depend
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## Releases
+
+### v0.2.0 (13 Aug 2025)
+**Commit:** 146795a
+
+**Key Changes:**
+- **UI Fix**: Resolved left-hand file tree width misalignment for entries missing icons or spaces
+- **Code Quality**: Eliminated duplicate `getFileIcon` functions by moving to shared `utils/ui.go`
+- **Maintainability**: Improved code organization and reduced duplication by ~100 lines
+
+**Assets:**
+- [parsec-v0.2.0-linux-amd64.zip](releases/parsec-v0.2.0-linux-amd64.zip) (6.8 MB)
+- [parsec-v0.2.0-darwin-amd64.zip](releases/parsec-v0.2.0-darwin-amd64.zip) (6.7 MB)
+- [parsec-v0.2.0-windows-amd64.zip](releases/parsec-v0.2.0-windows-amd64.zip) (7.1 MB)
+
+### v0.1.0-alpha
+Initial alpha release with core functionality.
 
 ## Versioning
 
