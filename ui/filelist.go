@@ -169,10 +169,10 @@ func (m FileListModel) View() string {
 	for i := startIdx; i < endIdx; i++ {
 		file := displayFiles[i]
 
-		// Cursor indicator
+		// Cursor indicator (ensure consistent 2-character width)
 		cursor := "  "
 		if m.cursor < len(m.files) && file.Path == m.files[m.cursor].Path {
-			cursor = "> "
+			cursor = "> " // Already 2 characters
 		}
 
 		// File type indicator
@@ -184,23 +184,28 @@ func (m FileListModel) View() string {
 				indicator = "📁"
 			}
 		} else {
-			indicator = getFileIcon(file.Extension)
+			indicator = utils.GetFileIcon(file.Extension)
 		}
 
-		// Selection indicator
+		// Selection indicator (ensure consistent 1-character width)
 		selected := " "
 		if file.Path == m.selected {
-			selected = "✓"
+			selected = "✓" // Single character
 		}
 
 		// File name (truncate if too long)
 		name := file.Path
-		maxNameLength := m.width - 15 // Account for indicators and padding
+
+		// Calculate consistent width accounting for all components
+		// cursor: 2 chars, brackets: 2 chars, selected: 1 char, space: 1 char, indicator: 2 chars, space: 1 char
+		// Total fixed width: 9 characters
+		maxNameLength := m.width - 9
 		if maxNameLength > 0 && len(name) > maxNameLength {
 			name = name[:maxNameLength-3] + "..."
 		}
 
-		line := fmt.Sprintf("%s[%s] %s %s", cursor, selected, indicator, name)
+		// Use helper function to ensure consistent width formatting
+		line := formatFileLine(cursor, selected, indicator, name)
 
 		if m.cursor < len(m.files) && file.Path == m.files[m.cursor].Path {
 			line = m.cursorStyle.Render(line)
@@ -225,107 +230,6 @@ func (m FileListModel) View() string {
 	return m.baseStyle.Render(content)
 }
 
-// getFileIcon returns an appropriate icon for the file extension
-func getFileIcon(ext string) string {
-	icons := map[string]string{
-		// Programming languages
-		".go":    "🐹",
-		".py":    "🐍",
-		".js":    "📄",
-		".ts":    "📘",
-		".jsx":   "⚛️",
-		".tsx":   "⚛️",
-		".rs":    "🦀",
-		".java":  "☕",
-		".c":     "📄",
-		".cpp":   "📄",
-		".cc":    "📄",
-		".h":     "📄",
-		".hpp":   "📄",
-		".cs":    "🔷",
-		".php":   "🐘",
-		".rb":    "💎",
-		".swift": "🍎",
-		".kt":    "📱",
-		".scala": "⚖️",
-
-		// Documentation and markup
-		".md":       "📝",
-		".markdown": "📝",
-		".txt":      "📄",
-		".rst":      "📜",
-		".tex":      "📰",
-
-		// Configuration files
-		".json":       "🔧",
-		".yaml":       "⚙️",
-		".yml":        "⚙️",
-		".toml":       "⚙️",
-		".ini":        "⚙️",
-		".cfg":        "⚙️",
-		".conf":       "⚙️",
-		".env":        "🌿",
-		".properties": "⚙️",
-
-		// Data files
-		".xml": "📋",
-		".csv": "📊",
-		".log": "📜",
-		".sql": "🗄️",
-
-		// Shell and scripts
-		".sh":   "🐚",
-		".bash": "🐚",
-		".zsh":  "🐚",
-		".fish": "🐠",
-		".ps1":  "💻",
-		".bat":  "💻",
-		".cmd":  "💻",
-
-		// Build and package files
-		".dockerfile": "🐳",
-		".makefile":   "🔨",
-		".gradle":     "🐘",
-		".pom":        "📦",
-		".package":    "📦",
-
-		// Web and frontend
-		".html": "🌐",
-		".htm":  "🌐",
-		".css":  "🎨",
-		".scss": "🎨",
-		".sass": "🎨",
-		".less": "🎨",
-
-		// Images
-		".png":  "🖼️",
-		".jpg":  "🖼️",
-		".jpeg": "🖼️",
-		".gif":  "🖼️",
-		".svg":  "🖼️",
-		".ico":  "🖼️",
-
-		// Archives
-		".zip": "📦",
-		".tar": "📦",
-		".gz":  "📦",
-		".rar": "📦",
-		".7z":  "📦",
-
-		// Executables
-		".exe": "⚙️",
-		".bin": "⚙️",
-		".deb": "📦",
-		".rpm": "📦",
-		".msi": "📦",
-	}
-
-	if icon, exists := icons[ext]; exists {
-		return icon
-	}
-	return "📄"
-}
-
 // Helper functions for min/max
 func min(a, b int) int {
 	if a < b {
@@ -339,4 +243,29 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// formatFileLine ensures consistent width formatting for file list entries
+func formatFileLine(cursor, selected, indicator, name string) string {
+	// Ensure cursor is exactly 2 characters
+	if len(cursor) < 2 {
+		cursor = cursor + strings.Repeat(" ", 2-len(cursor))
+	} else if len(cursor) > 2 {
+		cursor = cursor[:2]
+	}
+
+	// Ensure selected is exactly 1 character
+	if len(selected) < 1 {
+		selected = " "
+	} else if len(selected) > 1 {
+		selected = selected[:1]
+	}
+
+	// Ensure indicator has consistent spacing (add space if needed)
+	indicatorWithSpace := indicator
+	if len(indicator) < 2 {
+		indicatorWithSpace = indicator + " "
+	}
+
+	return fmt.Sprintf("%s[%s] %s %s", cursor, selected, indicatorWithSpace, name)
 }

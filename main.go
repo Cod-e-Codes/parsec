@@ -325,7 +325,7 @@ func (m model) formatDirectoryPreview(dirName string, files []utils.FileInfo, di
 			icon = "📁"
 		} else {
 			// Get file icon based on extension
-			icon = getFileIcon(file.Extension)
+			icon = utils.GetFileIcon(file.Extension)
 		}
 
 		result.WriteString(fmt.Sprintf("  %s %s", icon, file.Path))
@@ -341,72 +341,6 @@ func (m model) formatDirectoryPreview(dirName string, files []utils.FileInfo, di
 
 	result.WriteString("\nPress Enter to navigate into this directory.")
 	return result.String()
-}
-
-// getFileIcon returns an appropriate icon for the file extension
-func getFileIcon(ext string) string {
-	icons := map[string]string{
-		// Programming languages
-		".go":    "🐹",
-		".py":    "🐍",
-		".js":    "📄",
-		".ts":    "📘",
-		".jsx":   "⚛️",
-		".tsx":   "⚛️",
-		".rs":    "🦀",
-		".java":  "☕",
-		".c":     "📄",
-		".cpp":   "📄",
-		".cc":    "📄",
-		".h":     "📄",
-		".hpp":   "📄",
-		".cs":    "🔷",
-		".php":   "🐘",
-		".rb":    "💎",
-		".swift": "🍎",
-		".kt":    "📱",
-		".scala": "⚖️",
-
-		// Documentation and markup
-		".md":       "📝",
-		".markdown": "📝",
-		".txt":      "📄",
-		".rst":      "📜",
-
-		// Configuration files
-		".json":       "🔧",
-		".yaml":       "⚙️",
-		".yml":        "⚙️",
-		".toml":       "⚙️",
-		".ini":        "⚙️",
-		".cfg":        "⚙️",
-		".conf":       "⚙️",
-		".env":        "🌿",
-		".properties": "⚙️",
-
-		// Data files
-		".xml": "📋",
-		".csv": "📊",
-		".log": "📜",
-
-		// Shell and scripts
-		".sh":   "🐚",
-		".bash": "🐚",
-		".zsh":  "🐚",
-		".fish": "🐠",
-		".ps1":  "💻",
-		".bat":  "💻",
-		".cmd":  "💻",
-
-		// Executables
-		".exe": "⚙️",
-		".bin": "⚙️",
-	}
-
-	if icon, exists := icons[ext]; exists {
-		return icon
-	}
-	return "📄"
 }
 
 // handleFileSelection processes file selection and starts summarization if appropriate
