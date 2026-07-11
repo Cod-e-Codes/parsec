@@ -138,6 +138,19 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Releases
 
+### v0.2.1 (11 Jul 2026)
+**Commit:** 97be366
+
+**Key Changes:**
+- **Security**: Bump `golang.org/x/net` to 0.55.0 (fixes CVE-2026-25680 — HTML parser denial of service)
+- **Dependencies**: Bump `github.com/sahilm/fuzzy` to 0.1.3 and `github.com/charmbracelet/bubbletea` to latest compatible release
+- **Toolchain**: Update Go module version to 1.25.0
+
+**Assets:**
+- [parsec-v0.2.1-linux-amd64.zip](releases/parsec-v0.2.1-linux-amd64.zip) (3.6 MB)
+- [parsec-v0.2.1-darwin-amd64.zip](releases/parsec-v0.2.1-darwin-amd64.zip) (3.6 MB)
+- [parsec-v0.2.1-windows-amd64.zip](releases/parsec-v0.2.1-windows-amd64.zip) (3.8 MB)
+
 ### v0.2.0 (13 Aug 2025)
 **Commit:** 146795a
 
